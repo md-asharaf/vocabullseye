@@ -497,10 +497,10 @@ function handleHit(i, ax, ay) {
   if (opt.correct) {
     score += 100; streak++; correctCount++;
     if (streak > maxStreak) maxStreak = streak;
-    showFeedback('+100  🎯  CORRECT!', '#2ecc71'); playSound('correct');
+    showFeedback('+100 CORRECT!', '#2ecc71'); playSound('correct');
   } else {
     score = Math.max(0, score - 10); streak = 0;
-    showFeedback('-10  ❌  WRONG!', '#e74c3c'); playSound('wrong');
+    showFeedback('-10 WRONG!', '#e74c3c'); playSound('wrong');
   }
   spawnParticles(ax, ay, opt.correct ? '#2ecc71' : '#e74c3c');
   updateScoreUI(); gameState = 'result';
