@@ -19,7 +19,7 @@ const ANIM_FILES = [
 
 export function PreloadCharacters() {
   ANIM_FILES.forEach(file => {
-    useFBX.preload(`/models/${file}.fbx`);
+    useFBX.preload(`${import.meta.env.BASE_URL}models/${file}.fbx`);
   });
   return null;
 }
@@ -41,16 +41,16 @@ export function Character({ animName, position, rotation, scale = 0.006, onHandR
 
   // @ts-ignore - Drei's useFBX types only specify string, but useLoader supports string[]
   const fbxs = useFBX([
-    '/models/Erika Archer With Bow Arrow.fbx', // 0: Archer Base
-    '/models/Passive Marker Man.fbx',          // 1: Target Base
-    '/models/Standing Aim Overdraw.fbx',       // 2
-    '/models/Standing Aim Recoil.fbx',         // 3
-    '/models/Standing Death Backward.fbx',     // 4
-    '/models/Standing Draw Arrow.fbx',         // 5
-    '/models/Standing Idle Examine.fbx',       // 6
-    '/models/Standing Idle.fbx',               // 7
-    '/models/Standing Jump.fbx',               // 8
-    '/models/Standing To Crouch.fbx'           // 9
+    `${import.meta.env.BASE_URL}models/Erika Archer With Bow Arrow.fbx`, // 0: Archer Base
+    `${import.meta.env.BASE_URL}models/Passive Marker Man.fbx`,          // 1: Target Base
+    `${import.meta.env.BASE_URL}models/Standing Aim Overdraw.fbx`,       // 2
+    `${import.meta.env.BASE_URL}models/Standing Aim Recoil.fbx`,         // 3
+    `${import.meta.env.BASE_URL}models/Standing Death Backward.fbx`,     // 4
+    `${import.meta.env.BASE_URL}models/Standing Draw Arrow.fbx`,         // 5
+    `${import.meta.env.BASE_URL}models/Standing Idle Examine.fbx`,       // 6
+    `${import.meta.env.BASE_URL}models/Standing Idle.fbx`,               // 7
+    `${import.meta.env.BASE_URL}models/Standing Jump.fbx`,               // 8
+    `${import.meta.env.BASE_URL}models/Standing To Crouch.fbx`           // 9
   ]) as any[];
 
   const baseFbx = characterType === 'target' ? fbxs[1] : fbxs[0];
