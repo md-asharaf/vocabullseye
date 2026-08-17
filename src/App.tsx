@@ -8,7 +8,7 @@ function App() {
   const setWords = useGameStore(state => state.setWords);
 
   useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}data.json`)
+    fetch(`${import.meta.env.BASE_URL}/data.json`)
       .then(r => r.json())
       .then(d => setWords(d))
       .catch(e => {
