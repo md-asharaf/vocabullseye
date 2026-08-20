@@ -242,7 +242,7 @@ html, body, #root {
   font-weight: 800;
   white-space: normal;
   text-align: center;
-  max-width: min(300px, 45vw);
+  max-width: min(600px, 60vw);
   line-height: 1.15;
   word-wrap: break-word;
   pointer-events: none;
