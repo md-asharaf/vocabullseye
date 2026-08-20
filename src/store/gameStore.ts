@@ -59,8 +59,10 @@ interface StoreState {
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
+  const randomArray = new Uint32Array(1);
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    window.crypto.getRandomValues(randomArray);
+    const j = Math.floor((randomArray[0] / 4294967296) * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
