@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Environment } from '@react-three/drei';
 import * as THREE from 'three';
@@ -7,13 +7,8 @@ import { Target } from './Target';
 import { BowAndArrow } from './BowAndArrow';
 
 function SceneContent() {
-  const { currentOptions, setSceneReady } = useGameStore();
+  const { currentOptions } = useGameStore();
   const { viewport, size } = useThree();
-
-  useEffect(() => {
-    setSceneReady(true);
-    return () => setSceneReady(false);
-  }, [setSceneReady]);
 
   const isMobile = size.width < 520;
 
@@ -100,7 +95,7 @@ export default function Scene() {
         />
         <Environment preset="city" />
         <Suspense fallback={null}>
-          {gameState !== 'idle' && gameState !== 'end' && <SceneContent />}
+          {gameState !== 'idle' && gameState !== 'starting' && gameState !== 'end' && <SceneContent />}
         </Suspense>
       </Canvas>
     </div>

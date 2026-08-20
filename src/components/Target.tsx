@@ -7,8 +7,8 @@ import { Character } from './Character';
 
 export interface TargetProps {
   position: [number, number, number];
-  index: number;
-  option: Option;
+  index:    number;
+  option:   Option;
 }
 
 export function Target({ position, index, option }: TargetProps) {
@@ -18,34 +18,27 @@ export function Target({ position, index, option }: TargetProps) {
 
   const isEliminated = option.eliminated;
 
-  // React to dodge events
   useEffect(() => {
     const handleDodge = (e: any) => {
       if (e.detail.index === index && !isEliminated && gameState === 'flying') {
         const type = e.detail.type;
         setAnimState(type === 'jump' ? 'Standing Jump' : 'Standing To Crouch');
-
-        // Return to idle after dodge
-        setTimeout(() => {
-          setAnimState('Standing Idle');
-        }, 1500);
+        setTimeout(() => { setAnimState('Standing Idle'); }, 1500);
       }
     };
     window.addEventListener('targetDodge', handleDodge);
     return () => window.removeEventListener('targetDodge', handleDodge);
   }, [index, isEliminated, gameState]);
 
-  useFrame((_state, _delta) => {
+  useFrame(() => {
     if (!meshRef.current) return;
 
     if (isEliminated) {
       meshRef.current.scale.lerp(new THREE.Vector3(0.5, 0.5, 0.5), 0.1);
-      if (animState !== 'Standing To Crouch') {
-        setAnimState('Standing To Crouch'); // Cower down
-      }
+      if (animState !== 'Standing To Crouch') setAnimState('Standing To Crouch');
       return;
     } else {
-      meshRef.current.scale.lerp(new THREE.Vector3(1.2, 1.2, 1.2), 0.1); // Slightly larger than 1
+      meshRef.current.scale.lerp(new THREE.Vector3(1.2, 1.2, 1.2), 0.1);
     }
   });
 
@@ -69,18 +62,15 @@ export function Target({ position, index, option }: TargetProps) {
   const isMobile = size.width < 520;
 
   const yShift = isMobile ? -0.378 : -0.54;
-  const labelY = isMobile ? 0.5 : 0.7;
+  const labelY = isMobile ? 0.35 : 0.55;
 
   const textColors = ['#ff5252', '#448aff', '#69f0ae', '#ffd740'];
-  const textColor = textColors[index % textColors.length];
+  const textColor  = textColors[index % textColors.length];
 
   return (
     <group position={position} ref={meshRef}>
-      {/* Shift down so the character's visual center is perfectly at the group's origin */}
       <Character characterType="target" animName={animState} rotation={[0, -Math.PI / 2, 0]} position={[0, yShift, 0]} />
-
-      {/* Label floats just above the head */}
-      <Html position={[0, labelY, 0]} center>
+      <Html position={[0, labelY, 0]} center zIndexRange={[100, 0]}>
         <div
           className={`vocab-label ${isEliminated ? 'eliminated' : ''}`}
           style={{

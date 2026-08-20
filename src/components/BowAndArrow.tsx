@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '../store/gameStore';
 import { Character } from './Character';
+import { audioManager } from '../lib/audioManager';
 
 const GRAVITY = 15;
 const SPEED_MUL = 15;
@@ -26,15 +27,14 @@ export function BowAndArrow({ targetPositions, bowPos }: BowAndArrowProps) {
   const isMobile = size.width < 520;
   const bowScale = isMobile ? 0.45 : 0.65;
 
-  const arrowRef = useRef<THREE.Group>(null);
+  const arrowRef    = useRef<THREE.Group>(null);
   const bowGroupRef = useRef<THREE.Group>(null);
   const leftHandRef = useRef<THREE.Object3D | null>(null);
   const arrowFlying = useRef(false);
-  const velocity = useRef(new THREE.Vector3());
+  const velocity    = useRef(new THREE.Vector3());
 
   const isPulling = currentPull > 0;
 
-  // Archer Animation State Machine
   useEffect(() => {
     if (gameState === 'flying') {
       setArcherAnim('Standing Aim Recoil');
@@ -47,11 +47,12 @@ export function BowAndArrow({ targetPositions, bowPos }: BowAndArrowProps) {
     }
   }, [gameState, isPulling]);
 
-  const handlePointerDown = (e: PointerEvent) => {
+  const handlePointerDown = (e: any) => {
     e.stopPropagation();
     if (gameState !== 'aiming') return;
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
+    audioManager.play('bow_draw');
   };
 
   useEffect(() => {
@@ -59,13 +60,12 @@ export function BowAndArrow({ targetPositions, bowPos }: BowAndArrowProps) {
       if (!isDragging) return;
 
       const dx = dragStart.x - e.clientX;
-      const dy = e.clientY - dragStart.y; // Dragging down aims UP
+      const dy = e.clientY - dragStart.y;
 
       const dist = Math.hypot(dx, dy);
       const pull = Math.min(1, dist / 200);
       setCurrentPull(pull);
 
-      // 180-degree constraint (only aim rightwards)
       if (dx > 0) {
         setAimAngle(Math.atan2(dy, dx));
       } else {
@@ -78,6 +78,7 @@ export function BowAndArrow({ targetPositions, bowPos }: BowAndArrowProps) {
       setIsDragging(false);
 
       if (currentPull > 0.1) {
+        audioManager.play('bow_shoot');
         const speed = currentPull * SPEED_MUL;
         const vX = Math.cos(aimAngle) * speed;
         const vY = Math.sin(aimAngle) * speed;
@@ -85,9 +86,8 @@ export function BowAndArrow({ targetPositions, bowPos }: BowAndArrowProps) {
 
         arrowFlying.current = true;
         setGameState('flying');
-        if (arrowRef.current) arrowRef.current.userData = {}; // clear dodging memory
+        if (arrowRef.current) arrowRef.current.userData = {};
 
-        // Prediction starts EXACTLY at the left hand (same as trajectory line and physical flight)
         let startX = bowPos.x;
         let startY = bowPos.y + 0.1;
         if (leftHandRef.current) {
@@ -97,12 +97,11 @@ export function BowAndArrow({ targetPositions, bowPos }: BowAndArrowProps) {
           startY = hp.y;
         }
 
-        // Simulate exact trajectory to find the first target intersected
         let simX = startX;
         let simY = startY;
         let simVy = vY;
         let simT = 0;
-        const simDelta = 1 / 60; // 60fps simulation
+        const simDelta = 1 / 60;
 
         let destinedToHitCorrect = false;
         let firstIncorrectHit = -1;
@@ -120,7 +119,6 @@ export function BowAndArrow({ targetPositions, bowPos }: BowAndArrowProps) {
             const dx = Math.abs(simX - targetPositions[i][0]);
             const dy = Math.abs(simY - targetPositions[i][1]);
 
-            // True character dimensions: ~1.2 tall, ~0.6 wide (at desktop scale 0.006)
             const hitBoxRadiusX = isMobile ? 0.3 * 0.7 : 0.3;
             const hitBoxRadiusY = isMobile ? 0.6 * 0.7 : 0.6;
 
@@ -138,7 +136,6 @@ export function BowAndArrow({ targetPositions, bowPos }: BowAndArrowProps) {
           if (destinedToHitCorrect) break;
         }
 
-        // Only dodge if the arrow is NOT going to hit the correct target
         if (!destinedToHitCorrect && firstIncorrectHit !== -1) {
           const dodgeTime = Math.max(0, firstIncorrectTime - 0.4) * 1000;
           const dodgeType = firstIncorrectY < targetPositions[firstIncorrectHit][1] ? 'jump' : 'crouch';
@@ -152,7 +149,6 @@ export function BowAndArrow({ targetPositions, bowPos }: BowAndArrowProps) {
         }
 
         if (arrowRef.current) {
-          // Actual arrow flight starts EXACTLY at the left hand
           if (leftHandRef.current) {
             const handPos = new THREE.Vector3();
             leftHandRef.current.getWorldPosition(handPos);
@@ -162,11 +158,10 @@ export function BowAndArrow({ targetPositions, bowPos }: BowAndArrowProps) {
             arrowRef.current.position.y += 0.1;
           }
           arrowRef.current.visible = true;
-          // reset dodge flags
           arrowRef.current.userData = {};
         }
         arrowFlying.current = true;
-        setGameState('flying'); // update game state to prevent new drags while flying
+        setGameState('flying');
       }
       setCurrentPull(0);
     };
@@ -227,7 +222,6 @@ export function BowAndArrow({ targetPositions, bowPos }: BowAndArrowProps) {
           const tp = targetPositions[i];
 
           const dx = Math.abs(arr.position.x - tp[0]);
-          // Collision Logic - Exact Scaled Bounding Box
           const hitBoxRadiusX = isMobile ? 0.3 * 0.7 : 0.3;
           const hitBoxRadiusY = isMobile ? 0.6 * 0.7 : 0.6;
 
@@ -280,17 +274,13 @@ export function BowAndArrow({ targetPositions, bowPos }: BowAndArrowProps) {
 
   return (
     <group>
-      {/* Procedural Bow tracking the actual hand bone */}
       <group ref={bowGroupRef} position={[bowPos.x, bowPos.y + 0.1, bowPos.z]} rotation={[0, 0, aimAngle]} scale={bowScale}>
-        {/* Invisible Hit Box for easier dragging */}
         <mesh onPointerDown={handlePointerDown} position={[0, 0, 0]} visible={false}>
           <boxGeometry args={[1.5, 2.5, 1.5]} />
           <meshBasicMaterial transparent opacity={0} />
         </mesh>
-        {/* Removed the procedural bow meshes, we now use the inbuilt bow! */}
       </group>
 
-      {/* Archer Character shifted down by 0.6 so the visual center matches bowPos */}
       <Character
         animName={archerAnim}
         position={[bowPos.x, bowPos.y - 0.6, bowPos.z]}
@@ -306,20 +296,17 @@ export function BowAndArrow({ targetPositions, bowPos }: BowAndArrowProps) {
       ))}
 
       <group ref={arrowRef} visible={true} scale={bowScale}>
-        {/* Shaft */}
         <mesh position={[0, -0.1, 0]}>
           <cylinderGeometry args={[0.015, 0.015, 0.8]} />
-          <meshStandardMaterial color="#5C4033" /> {/* Dark brown wood */}
+          <meshStandardMaterial color="#5C4033" />
         </mesh>
-        {/* Arrowhead */}
         <mesh position={[0, 0.35, 0]}>
           <coneGeometry args={[0.04, 0.15, 8]} />
-          <meshStandardMaterial color="#C0C0C0" metalness={0.8} roughness={0.2} /> {/* Shiny silver */}
+          <meshStandardMaterial color="#C0C0C0" metalness={0.8} roughness={0.2} />
         </mesh>
-        {/* Fletching (feathers) */}
         <mesh position={[0, -0.45, 0]}>
           <boxGeometry args={[0.08, 0.15, 0.005]} />
-          <meshStandardMaterial color="#ff0000" /> {/* Red feathers */}
+          <meshStandardMaterial color="#ff0000" />
         </mesh>
         <mesh position={[0, -0.45, 0]} rotation={[0, Math.PI / 2, 0]}>
           <boxGeometry args={[0.08, 0.15, 0.005]} />

@@ -3,21 +3,27 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --mint:       #1de9b6;
-  --mint-dark:  #00b386;
-  --mint-deep:  #00796b;
-  --hud-bg:     rgba(0, 77, 64, 0.82);
-  --hud-border: rgba(29, 233, 182, 0.22);
-  --overlay-bg: linear-gradient(135deg, #003d33 0%, #00695c 60%, #004d40 100%);
+  --mint:        #1de9b6;
+  --mint-dark:   #00b386;
+  --mint-deep:   #00796b;
+  --hud-bg:      rgba(0, 77, 64, 0.82);
+  --hud-border:  rgba(29, 233, 182, 0.22);
+  --overlay-bg:  linear-gradient(135deg, #003d33 0%, #00695c 60%, #004d40 100%);
   --accent-gold: #f5a623;
   --accent-red:  #e74c3c;
-  --text-main:  #e0faf4;
-  --text-dim:   #80cbc4;
-  --glass:      rgba(255,255,255,0.08);
-  --glass-b:    rgba(29,233,182,0.20);
-  --shadow:     0 4px 24px rgba(0,0,0,0.45);
-  --hud-h-top:  60px;
-  --hud-h-bot:  56px;
+  --text-main:   #e0faf4;
+  --text-dim:    #80cbc4;
+  --glass:       rgba(255,255,255,0.08);
+  --glass-b:     rgba(29,233,182,0.20);
+  --shadow:      0 4px 24px rgba(0,0,0,0.45);
+  --hud-h-top:   72px;
+  --hud-h-bot:   56px;
+
+  /* ── Segmented progress bar ── */
+  --seg-correct: #2ecc71;
+  --seg-wrong:   #e74c3c;
+  --seg-current: #f5a623;
+  --seg-pending: rgba(255,255,255,0.12);
 }
 
 html, body, #root {
@@ -34,7 +40,7 @@ html, body, #root {
   position: fixed; inset: 0;
   background: var(--overlay-bg);
   display: flex; align-items: center; justify-content: center;
-  z-index: 100;
+  z-index: 99999999;
 }
 
 .start-content, .end-content {
@@ -123,7 +129,7 @@ html, body, #root {
 /* ── HUD WRAPPER ── */
 #gameWrapper {
   position: fixed; inset: 0; pointer-events: none;
-  display: flex; flex-direction: column; z-index: 10;
+  display: flex; flex-direction: column; z-index: 99999999;
 }
 
 #topHud, #bottomHud, .score-overlay, .interactive-layer {
@@ -132,23 +138,44 @@ html, body, #root {
 
 /* ── TOP HUD ── */
 #topHud {
-  height: var(--hud-h-top); min-height: 50px;
+  height: var(--hud-h-top); min-height: 60px;
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 0.75rem; background: var(--hud-bg); backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--hud-border); gap: 0.5rem; flex-shrink: 0;
 }
 
-#questionBox { display: flex; align-items: center; gap: 0.6rem; flex: 1; overflow: hidden; }
-#questionLabel {
-  font-family: 'Bangers', cursive; font-size: clamp(0.85rem, 2.5vw, 1rem); color: var(--mint);
-  white-space: nowrap; background: rgba(29,233,182,0.12);
-  border: 1px solid rgba(29,233,182,0.28); border-radius: 6px; padding: 2px 8px; flex-shrink: 0;
+#questionBox {
+  display: flex; flex-direction: column; gap: 3px;
+  flex: 1; overflow: hidden; min-width: 0;
 }
 #questionText {
   font-size: clamp(0.72rem, 2vw, 0.9rem); color: var(--text-main); font-weight: 600; line-height: 1.3;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; min-width: 0;
 }
 .q-highlight { color: var(--accent-gold); font-weight: 700; font-size: 1.05em; text-shadow: 0 0 10px rgba(245,166,35,0.3); }
+.q-label     { color: var(--text-dim); font-size: 0.85em; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+.q-number    { color: var(--mint); font-size: 1.1em; font-weight: 800; font-family: 'Bangers', cursive; letter-spacing: 1px; }
+
+/* ── Loader bar (StartGameLoader) ── */
+.loader-bar-track {
+  width: 100%; height: 12px; background: rgba(255,255,255,0.1);
+  border-radius: 6px; overflow: hidden; margin-top: 1.5rem;
+}
+.loader-bar-fill {
+  height: 100%; background: var(--mint);
+  transition: width 0.25s ease; border-radius: 6px;
+  box-shadow: 0 0 12px rgba(29,233,182,0.6);
+}
+
+/* ── Quiz spinner ── */
+.quiz-spinner {
+  width: 48px; height: 48px; margin: 1.5rem auto 0;
+  border: 4px solid rgba(29,233,182,0.2);
+  border-top-color: var(--mint);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 #topControls { display: flex; gap: 0.4rem; flex-shrink: 0; }
 .hud-btn {
@@ -194,7 +221,7 @@ html, body, #root {
   position: fixed; inset: 0; margin: auto; height: fit-content;
   background: rgba(0, 45, 35, 0.85); border: 1px solid rgba(29, 233, 182, 0.5);
   border-radius: 18px; padding: 1.5rem; width: min(280px, calc(100vw - 1.5rem));
-  z-index: 20; backdrop-filter: blur(16px);
+  z-index: 99999999; backdrop-filter: blur(16px);
   box-shadow: 0 10px 40px rgba(0,0,0,0.7), inset 0 0 20px rgba(29,233,182,0.1);
   animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: flex; flex-direction: column; align-items: center; text-align: center; pointer-events: auto;
@@ -213,9 +240,12 @@ html, body, #root {
 .vocab-label {
   font-family: 'Inter', sans-serif;
   font-weight: 800;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
+  max-width: min(300px, 45vw);
+  line-height: 1.15;
+  word-wrap: break-word;
   pointer-events: none;
-  /* Heavy text shadow to ensure readability against any background without a box */
   text-shadow: 0px 2px 4px rgba(0,0,0,0.8), 0px 0px 8px rgba(0,0,0,0.8), 0px 4px 16px rgba(0,0,0,0.6);
   transform: translate3d(-50%, -100%, 0);
   transition: opacity 0.3s;
@@ -237,8 +267,8 @@ html, body, #root {
 }
 
 @media (max-width: 480px) {
-  :root { --hud-h-top: 52px; --hud-h-bot: 52px; }
-  #questionText { font-size: 0.68rem; }
-  .bottom-btn   { padding: 0.35rem 0.7rem; }
+  :root { --hud-h-top: 64px; --hud-h-bot: 52px; }
+  #questionText  { font-size: 0.68rem; }
+  .bottom-btn    { padding: 0.35rem 0.7rem; }
   .score-overlay { padding: 0.35rem 0.6rem; }
 }

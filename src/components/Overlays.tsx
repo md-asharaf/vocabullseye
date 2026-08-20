@@ -1,30 +1,91 @@
+import { useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { useProgress } from '@react-three/drei';
+import { audioManager } from '../lib/audioManager';
 
-export function GameLoader() {
-  const { gameState, isSceneReady } = useGameStore();
-  const { progress } = useProgress();
+export function StartGameLoader() {
+  const {
+    gameState, assetsReady, assetsProgress,
+    quizFetchState, quizError, rawQuestions,
+    _beginGame, requestStartGame,
+  } = useGameStore();
 
-  if (gameState === 'idle' || gameState === 'end') return null;
-  if (isSceneReady) return null;
+  const didBegin = useRef(false);
+
+  useEffect(() => {
+    if (gameState !== 'starting') {
+      didBegin.current = false;
+      return;
+    }
+
+    if (assetsReady && quizFetchState === 'done' && !didBegin.current) {
+      didBegin.current = true;
+      _beginGame(rawQuestions);
+    }
+  }, [gameState, assetsReady, quizFetchState, rawQuestions, _beginGame]);
+
+  if (gameState !== 'starting') return null;
+
+  const pct = Math.round(assetsProgress * 100);
+
+  if (quizFetchState === 'error') {
+    return (
+      <div className="overlay-screen" style={{ zIndex: 999 }}>
+        <div className="start-content">
+          <h2 className="game-title" style={{ fontSize: '1.8rem', color: '#e74c3c' }}>
+            ⚠️ Quiz Load Failed
+          </h2>
+          <p style={{ color: 'var(--text-dim)', margin: '1rem 0', fontSize: '0.85rem' }}>
+            {quizError}
+          </p>
+          <button
+            className="btn-primary"
+            onClick={() => {
+              audioManager.play('ui_click');
+              requestStartGame();
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!assetsReady) {
+    return (
+      <div className="overlay-screen" style={{ zIndex: 999, backgroundColor: 'rgba(0, 77, 64, 1)' }}>
+        <div className="start-content">
+          <h2 className="game-title" style={{ fontSize: '2rem' }}>
+            🏹 LOADING GAME
+          </h2>
+          <p className="game-subtitle" style={{ marginBottom: '1.5rem' }}>
+            Loading 3D Assets ({pct}%)…
+          </p>
+          <div className="loader-bar-track">
+            <div className="loader-bar-fill" style={{ width: `${pct}%` }} />
+          </div>
+          <p style={{ color: 'var(--mint)', marginTop: '0.8rem', fontFamily: 'Bangers, cursive', fontSize: '1.2rem', letterSpacing: '1px' }}>
+            {pct}%
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="overlay-screen" style={{ zIndex: 999999, backgroundColor: 'rgba(0, 77, 64, 1)' }}>
+    <div className="overlay-screen" style={{ zIndex: 999, backgroundColor: 'rgba(0, 77, 64, 1)' }}>
       <div className="start-content">
-        <h2 className="game-title" style={{ fontSize: '2.5rem' }}>PREPARING TARGETS...</h2>
-        <div style={{ width: '100%', height: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '6px', overflow: 'hidden', marginTop: '1.5rem' }}>
-          <div style={{ height: '100%', width: `${progress}%`, background: 'var(--mint)', transition: 'width 0.2s' }} />
-        </div>
-        <p style={{ color: 'var(--mint)', marginTop: '0.8rem', fontFamily: 'Bangers, cursive', fontSize: '1.2rem', letterSpacing: '1px' }}>
-          {Math.round(progress)}%
-        </p>
+        <h2 className="game-title" style={{ fontSize: '2rem' }}>
+          🎯 GENERATING QUIZ…
+        </h2>
+        <div className="quiz-spinner" />
       </div>
     </div>
   );
 }
 
 export function StartScreen() {
-  const { gameState, startGame } = useGameStore();
+  const { gameState, requestStartGame } = useGameStore();
 
   if (gameState !== 'idle') return null;
 
@@ -34,20 +95,22 @@ export function StartScreen() {
         <h1 className="game-title">🏹 ARCHER QUIZ 3D</h1>
         <p className="game-subtitle">Shoot the correct answer!</p>
         <div className="start-instructions">
-          <div className="instr-item">🖱️ <span>Drag & pull the bow string to aim</span></div>
+          <div className="instr-item">🖱️ <span>Drag &amp; pull the bow string to aim</span></div>
           <div className="instr-item">✅ <span>Hit correct man = <b>+100 pts</b></span></div>
           <div className="instr-item">❌ <span>Wrong/Miss = <b>-10 pts</b></span></div>
           <div className="instr-item">⚡ <span>Use 50/50 to eliminate 2 wrong options</span></div>
           <div className="instr-item">💡 <span>Use Hint for a memory trick</span></div>
         </div>
-        <button id="startBtn" className="btn-primary" onClick={startGame}>START GAME</button>
+        <button id="startBtn" className="btn-primary" onClick={requestStartGame}>
+          START GAME
+        </button>
       </div>
     </div>
   );
 }
 
 export function EndScreen() {
-  const { gameState, score, maxStreak, correctCount, gameQuestions, startGame } = useGameStore();
+  const { gameState, score, maxStreak, correctCount, gameQuestions, requestStartGame } = useGameStore();
 
   if (gameState !== 'end') return null;
 
@@ -69,7 +132,9 @@ export function EndScreen() {
             <span className="stat-value" id="finalCorrect">{correctCount}/{gameQuestions.length}</span>
           </div>
         </div>
-        <button id="playAgainBtn" className="btn-primary" onClick={startGame}>PLAY AGAIN</button>
+        <button id="playAgainBtn" className="btn-primary" onClick={requestStartGame}>
+          PLAY AGAIN
+        </button>
       </div>
     </div>
   );
