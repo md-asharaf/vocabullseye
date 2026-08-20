@@ -243,6 +243,7 @@ html, body, #root {
   font-size: clamp(0.75rem, 3.5vw, 1.1rem);
   white-space: normal;
   text-align: right;
+  width: max-content;
   max-width: min(500px, 70vw);
   line-height: 1.15;
   word-wrap: break-word;
