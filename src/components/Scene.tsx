@@ -29,7 +29,7 @@ function SceneContent() {
     : Math.min(w * 0.16, (115 / size.width) * w);
   const bulge = Math.min(rawBulge, (left + w * 0.95) - baseX);
 
-  const topSafePx = isMobile ? 140 : 120; // Slightly less padding on desktop
+  const topSafePx = isMobile ? 220 : 170;
   const botSafePx = size.height - 60;
 
   const topSafe = top - (topSafePx / size.height) * h;
